@@ -20,20 +20,6 @@
 #include "displayLCD.h"
 #include "LinEngine.h"
 
-
-
-////Define os pinos para o LIN_SOFT
-//#define RX_SOFT     PORTBbits.RB2 //Int2 
-//#define TX_SOFT     LATCbits.LATC6//=1LATC.//LATCbits.RC6 //RC6/TX/CK
-//#define CS_LIN      PORTBbits.RB5
-//#define VLR_TM0     180   // 179 -> 54,88us 180-> 53,9us
-//#define BIT_TM0     110   // 170 -> 66,00us 
-//#define LED_LIFE    PORTBbits.RB7
-
-//Define os pinos para o SPI
-//#define CS_SPI     PORTBbits. pino 22
-
-
 //Define outros pinos de uso geral
 #define Botao_B1    PORTEbits.RE0 
 #define Botao_B2    PORTEbits.RE1
@@ -41,22 +27,17 @@
 #define IO_BUZZER   PORTCbits.RC2
 #define IO_LED      PORTAbits.RA2
 
-
-
-
-//bit b_MeioBitTime,FlgNegativo;
-//bit b_BitLeitura,b_BitEscrita, b_BitLeitura_;
 bit ErroEscrita;
 bit bModo_Distancia,bLatch;
-//bit LinEngineBusy,END_BIT,TRANSMISSAO;
-//bit ImprimeTela,startOfByte;
+
 
 unsigned char ucMsgToRX[10]=0;
 unsigned char ucByteRecebido=0;
 unsigned char ucBotaoPressionado=0;
 
-//O protocolo implementado para a Engine LIN é o seguinte:
-//o primeiro byte do array a ser transmitido Byte[0], contem as informações de
+//******************************************************************************
+//O protocolo implementado para a Engine LIN é o seguinte: o primeiro byte
+//do array a ser transmitido Byte[0], contem as informações de 
 //quantos bytes devem ser transmitidos, ou transmitidos e recebidos.
 //Por exemplo: No nibble BAIXO, é a quantidade a ser transmitida (incluido
 //o Synch),e no nibble ALTO, é a quantidade a ser recebida. Quando na 
@@ -73,12 +54,12 @@ unsigned char ucBotaoPressionado=0;
 //0xE2 (PID). Mas é esperado 3 bytes na recepção, incluindo o CheckSum que o
 //Slave(PGA40-Q1) enviará.
 
-// Valid data for command1 is only
+// Dados validos para comandar o SOC, a ser melhorado.
                     //			0 - Listen mode ;
                     //			1 - Short Distance Detection;
 			        //          2 - Media Distance Detection;
                     //			3 - Long Distance Detection;
-
+//******************************************************************************
 unsigned char ucMsgSetThresHoldListenMode  [4] = {0x04,0x11,0x00,0xEE};//ListenMode
 unsigned char ucMsgSetThresHoldShortRange  [4] = {0x04,0x11,0x01,0xED};//ShortRange
 unsigned char ucMsgSetThresHoldMediaRange  [4] = {0x04,0x11,0x02,0xEC};//MediaRange
@@ -393,7 +374,9 @@ void main(void)
         
       
         __delay_ms(1000);
+        IO_BUZZER=0;
         __delay_ms(100);
+        IO_BUZZER=0;
         if(b_diagnostico)
         {
             //Ler entrada analogica AN1.
