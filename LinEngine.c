@@ -21,7 +21,7 @@ void ByteToTXs( unsigned char ucByteToSend)
 {
     if(!LinEngineBusy)
     {
-        TX_SOFT=DOMINANTE;
+        TX_SOFT=DOMINANTE;//StartBit
         TMR0L=VLR_TM0;
         b_MeioBitTime=FALSE;
         LinEngineBusy=TRUE;
@@ -50,7 +50,7 @@ void LinEngine(unsigned char * pFrameLin)
 
     
     LIN_ERROR_FLAGS=FALSE;// Rever essas flag, pois nao esta apropriadamente
-                          // estabelecida seus bits.   
+                          // estabelecida a correlação dos seus bits.   
     ucLinAction=0;
       while(!LIN_ERROR_FLAGS)
       {
@@ -126,109 +126,37 @@ void LinEngine(unsigned char * pFrameLin)
                 
 
             case DATA_RX:
-            
-             //O codigo abaixo é somente experiencia
-//             LinEngineBusy=FALSE;
-//             TX_SOFT=RECESSIVO;
-//             INTCONbits.TMR0IF = 0;
-//             INTCONbits.TMR0IE = 0;
-//             __delay_ms(20);
-//             INTCONbits.TMR0IF = 0;
-//             INTCONbits.TMR0IE = 1;
-//             ucLinAction=0;
-             LIN_ERROR_FLAGS=TRUE;// somente experiencia.
-             //Até aqui é a experiencia.
-                
-//                if(!LinEngineBusy)
-//                    {
-//                        TX_SOFT=DOMINANTE;
-//                        TMR0L=VLR_TM0;
-//                        b_MeioBitTime=FALSE;
-//                        LinEngineBusy=TRUE;
-//                        ucByteToTX=pFrameLin[3];
-//                        ucLinBitCount = 0;
-//                        
-//                       // ucByteSizeToTX--;
-//                    }
-                /*
+                //
                 TX_SOFT=RECESSIVO;
                 INTCONbits.TMR0IF = 0;
                 INTCONbits.TMR0IE = 0;
-                
                 ucLinBitCount = 0;
                 TRANSMISSAO=FALSE;
                 ucByteRecebido=0x00;
                 INTCON3bits.INT2IF=0;
                 INTCON3bits.INT2IE=1;
+                ImprimeTela=TRUE;//qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
                 ucByte_RX=0;
-                ucDATA_CNT=9;
-//                do
-//                {
-//                    //LIGA UM TIME-OUT Timer1
-//                    INTCON3bits.INT2IF=0;
-//                    INTCON3bits.INT2E=1;
-//                }while(ucByte_RX < ucDATA_CNT);
                 
-                //INTCON3bits.INT2IF=0;
-                //INTCON3bits.INT2IE=1;
-               // delay_ms(10);
-                INTCONbits.TMR0IF = 0;
-                INTCONbits.TMR0IE = 0;
-                ImprimeTela=TRUE;
-
-
-                */
+                //Espera um determinado tempo pra recepcao dos bytes 
+                //que já se sabe, antecipadamente quantos serão. 04/11/2020
+                //Quanto tempo demora um byte? Na taxa de 19,2 baud
+                //Cada bit 53us * 10 = 530us ou 0,53ms.
+                //Implementar um metodo melhor (utilizando um timer talvez),
+                //doque simplesmente um delay, como o abaixo!
+                __delay_ms(20);//Experiencia
+            
+           
+               LIN_ERROR_FLAGS=TRUE;// somente experiencia, força a saída do laço!
             break;
-            
-             case CHCKSUM: //(pFrameLin[3]&0x0F);
-            
-             TX_SOFT=RECESSIVO;
-             INTCONbits.TMR0IF = 0;
-             INTCONbits.TMR0IE = 0;
-             __delay_ms(7);
-             INTCONbits.TMR0IF = 0;
-             INTCONbits.TMR0IE = 1;
-             LIN_ERROR_FLAGS=TRUE;// somente experiencia.
-             ucLinAction=0;
-//                 if(!LinEngineBusy)
-//                {
-//                    TX_SOFT=DOMINANTE;
-//                    TMR0L= VLR_TM0;
-//                    //INTCONbits.TMR0IE = 1;
-//                    b_MeioBitTime=FALSE;
-//                    LinEngineBusy=TRUE;
-//                    ucByteToTX=pFrameLin[3];//CheckSum
-//                    ucLinBitCount = 0;
-//                 }
-                 break;
-                 
-//                 if(!LinEngineBusy)
-//                {
-//                    TX_SOFT=DOMINANTE;
-//                    TMR0L= VLR_TM0;
-//                   // INTCONbits.TMR0IE = 1;
-//                    b_MeioBitTime=FALSE;
-//                    LinEngineBusy=TRUE;
-//                    ucByteToTX=ucValorCheckSum;
-//                    ucLinBitCount = 0;
-//                }
-//                 
-////                TX_SOFT=RECESSIVO;
-////                INTCONbits.TMR0IF = 0;
-////                INTCONbits.TMR0IE = 0;
-////                delay_ms(20);
-////                INTCONbits.TMR0IF = 0;
-////                INTCONbits.TMR0IE = 1;
-////                ucLinAction=0;
-//            break;
-            
+  
             default:
                 //Verefico se o valor do TickTime do Timer0 nao eh
                 //maior que um certo valor, se for Desligo o Timer Zero.
-               // delay_ms(10);
-//                INTCONbits.TMR0IF = 0;
-//                INTCONbits.TMR0IE = 0;
-//                ImprimeTela=TRUE;
+                //delay_ms(10);
+                //INTCONbits.TMR0IF = 0;
+                //INTCONbits.TMR0IE = 0;
+                //ImprimeTela=TRUE;
                 LIN_ERROR_FLAGS=TRUE;// somente experiencia.
                 ucLinAction=0;
             break;

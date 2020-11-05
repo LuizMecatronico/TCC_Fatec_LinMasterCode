@@ -43,12 +43,14 @@ unsigned char ucBotaoPressionado=0;
 //o Synch),e no nibble ALTO, é a quantidade a ser recebida. Quando na 
 //transmissão, o último byte deverá ser o CHECKSUM, ja calculado:
 
+//Exemplo:
 //ucMsgSetThresHoldLongRange [4] = {0x04,0x11,0x03,0xEB};
 //Na transmissão do frame acima: existem 4 bytes há serem transmitidos,
 //incluindo o synch, ou seja, o 0x55, o 0x11(PID), o 0x00 (Um único byte) e o 
 //0xEE (CheckSum) que já foi previamente calculado. Como o nible ALTO do byte[0]
-//contém o valor zero, não é esperado nenhum byte há serem recebidos.
+//contém o valor zero, não é esperado nenhum byte há ser recebido.
 
+//Exemplo:
 //ucMsgGetTimeOfFligh[2] = {0x32,0xE2};
 //Já no frame acima, existem dois bytes a serem transmitidos, o 0x55 e o 
 //0xE2 (PID). Mas é esperado 3 bytes na recepção, incluindo o CheckSum que o
@@ -247,25 +249,25 @@ void main(void)
   
   while(1)
    { 
-       //SELECIONA O MODO DE DISTANCIA, SE LONGA OU CURTA
-       if(!(Botao_B1)&& !bLatch)
-       {
-           if((ucBotaoPressionado > 100)&&(!bLatch))
-           {
-                b_diagnostico=!b_diagnostico;//*****************************
-                bModo_Distancia=!bModo_Distancia;
-                ucBotaoPressionado=0x00;
-                bLatch=TRUE;
-                LimpaDisplay();
-           }
-       }
-       else if(Botao_B1&& bLatch)
-       {
-            ucBotaoPressionado=0x00;
-            bLatch=FALSE;
-       }
-       else  ucBotaoPressionado=0x00;
-       //********************************************
+//       //SELECIONA O MODO DE DISTANCIA, SE LONGA OU CURTA
+//       if(!(Botao_B1)&& !bLatch)
+//       {
+//           if((ucBotaoPressionado > 100)&&(!bLatch))
+//           {
+//                b_diagnostico=!b_diagnostico;//*****************************
+//                bModo_Distancia=!bModo_Distancia;
+//                ucBotaoPressionado=0x00;
+//                bLatch=TRUE;
+//                LimpaDisplay();
+//           }
+//       }
+//       else if(Botao_B1&& bLatch)
+//       {
+//            ucBotaoPressionado=0x00;
+//            bLatch=FALSE;
+//       }
+//       else  ucBotaoPressionado=0x00;
+//       //********************************************
         
 
        unsigned char ucCountRX;
@@ -279,28 +281,19 @@ void main(void)
            LinEngine(ucMsgSetThresHoldShortRange);
         
        //O delay abaixo, é provisório.
-       __delay_ms(200);/* Caso comente esse delay aqui, de 200ms, a resposta ao Meste ocorre,
-                        * mas o "SOC" nao tem tempo de ler a distancia e envia o valor presente
-                        * nos registradores no momento, que nos testes feito foram zero, embora
+       __delay_ms(200);/* Caso comente esse delay aqui, de 200ms, a resposta do Slave ocorre,
+                        * mas o "SOC" nao teve tempo de ler a distancia e envia o valor presente
+                        * nos registradores no momento, que nos testes feitos foram zero, embora
                         * depois de feita uma atribuicao forçada o soc enviou os valores atribuidos,
-                        * mas nao os valores devidamentes corretos..hJ 13/09/2020 */
+                        * oque indica que o mesmo não teve tempo de apurar o tempo de retorno do 
+                        * sinal. Hj 04/11/2020 */
+        __delay_ms(800);//Comentar ou remover esse delay aqui.
        
        LinEngine(ucMsgGetTimeOfFligh);
-       //Habilita o RX
-       TX_SOFT=RECESSIVO;
-       INTCONbits.TMR0IF = 0;
-       INTCONbits.TMR0IE = 0;
-       ucLinBitCount = 0;
-       TRANSMISSAO=FALSE;
-       ucByteRecebido=0x00;
-       INTCON3bits.INT2IF=0;
-       INTCON3bits.INT2IE=1;
-       ImprimeTela=TRUE;
-       ucByte_RX=0;
-       IO_BUZZER=0;
-       IO_LED=~IO_LED;
-       __delay_ms(300);//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-       IO_BUZZER=0;
+ 
+//       IO_LED=~IO_LED;
+//       __delay_ms(300);//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+//       IO_BUZZER=0;
        TimeOfFlight.u8[0] =(unsigned char) ucMsgToRX[1];
        TimeOfFlight.u8[1] =(unsigned char) ucMsgToRX[0];
 
@@ -329,8 +322,8 @@ void main(void)
             EscreveFraseRamLCD("ToF: ");
             EscreveInteiroLCD(TimeOfFlight.u16);
             //*************************************Até aqui.
-            PosicaoCursorLCD(2,1);
-            EscreveFraseRamLCD(" *OUT OF RANGE* ");   //OBS, Quando sair range, de apagar o lcd, poi se nao ira ficar a letra 'A'.
+//            PosicaoCursorLCD(2,1);
+//            EscreveFraseRamLCD(" *OUT OF RANGE* ");   //OBS, Quando sair range, de apagar o lcd, poi se nao ira ficar a letra 'A'.
             //EscreveFraseRamLCD("MODO->Long Range ");
             }
             else
@@ -368,12 +361,12 @@ void main(void)
             ImprimeTela=FALSE;
             }
         }   
-    //VERIFICA SE O TIMER ZERO ESTA CONTANDO
-    //if(ui_ContadorMeioBitTime!=
-    //              Anterior_ui_ContadorMeioBitTime++)
+        //VERIFICA SE O TIMER ZERO ESTA CONTANDO
+        //if(ui_ContadorMeioBitTime!=
+        //      Anterior_ui_ContadorMeioBitTime++)
         
       
-        __delay_ms(1000);
+        //__delay_ms(1000);//88888888888888888888888888888888888888888888888888888888
         IO_BUZZER=0;
         __delay_ms(100);
         IO_BUZZER=0;

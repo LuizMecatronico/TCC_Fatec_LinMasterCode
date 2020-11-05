@@ -19,7 +19,7 @@
 
 #define DATA_RX       0x0D
 
-#define CHCKSUM       0x0E
+//#define CHCKSUM       0x0E
 
 //bit TRANSMISSAO;
 
