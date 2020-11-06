@@ -19,11 +19,6 @@
 
 #define DATA_RX       0x0D
 
-//#define CHCKSUM       0x0E
-
-//bit TRANSMISSAO;
-
-
 //Define os pinos para o LIN_SOFT
 #define RX_SOFT     PORTBbits.RB2  //Int2 
 #define TX_SOFT     LATCbits.LATC6 //=1LATC.//LATCbits.RC6 //RC6/TX/CK
@@ -31,7 +26,7 @@
 #define VLR_TM0     180            // 179 -> 54,88us 180-> 53,9us
 #define BIT_TM0     110            // 170 -> 66,00us 
 #define LED_LIFE    PORTBbits.RB7
-
+#define LED_STATUS  PORTAbits.RA1
 
 unsigned int   ui_ContadorMeioBitTime=0;
 unsigned char  ucByte_RX , ucLinAction=0x00;

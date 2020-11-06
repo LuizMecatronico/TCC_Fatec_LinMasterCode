@@ -27,7 +27,7 @@
 #define IO_BUZZER   PORTCbits.RC2
 #define IO_LED      PORTAbits.RA2
 
-bit ErroEscrita;
+bit bErroEscrita,b_CheckSumOK;
 bit bModo_Distancia,bLatch;
 
 
@@ -69,8 +69,6 @@ unsigned char ucMsgSetThresHoldLongRange   [4] = {0x04,0x11,0x03,0xEB};//LongRan
 
 unsigned char ucMsgGetTimeOfFligh[2] = {0x32,0xE2};
 
-//unsigned char  ucLinDataCount=0;
-
 unsigned int uiValorADC=0;
 
 
@@ -78,7 +76,6 @@ unsigned int uiValorADC=0;
 //------------------------------------------------------------------------------
 void interrupt high_priority Interrupcoes(void)
 {
-   //static unsigned char ucLinBitCount;
    if( INTCON3bits.INT2IE &&  INTCON3bits.INT2IF)
     {
         TMR0L= VLR_TM0;
@@ -101,6 +98,8 @@ void interrupt high_priority Interrupcoes(void)
     {
         INTCONbits.TMR0IF=0;
         ui_ContadorMeioBitTime++;
+        //*********************************************************************
+        //              TRANSMISSAO DOS BYTES ENVIADOS PELO LIN_MASTER (PIC)
        
         if(TRANSMISSAO)
         {
@@ -135,14 +134,16 @@ void interrupt high_priority Interrupcoes(void)
                 }
             }
             else
-            {   //LeituraBit
+            {   //Esse bit abaixo "bErroEscrita", será parte de um dos 8 bits
+                //da variavel de Erro, aqui neste código nomeada como:
+                //LIN_ERROR_FLAGS Hoje 05/11/2020.
                 if(RX_SOFT != b_BitEscrita) //OBS: LER ESCREVER LAT PORT
-                             ErroEscrita=TRUE;
+                             bErroEscrita=TRUE;
                 
             }
         }
         //*********************************************************************
-        //              RECEPCAO DOS BYTES ENVIADOS PELO PGA450-Q1
+        //              RECEPCAO DOS BYTES ENVIADOS PELO LIN_SLAVE (PGA450-Q1)
         else
         {
             if(b_MeioBitTime)
@@ -178,13 +179,12 @@ void interrupt high_priority Interrupcoes(void)
 }
 
 
-
 unsigned char CalculaCheckSum(unsigned char * pArrayToTx,
                               unsigned char ucByteCount)
 {
     unsigned char ucCount;
     union { 
-            unsigned short   u16;
+            unsigned int   u16;
             unsigned char  u8[2];
           }Sum;
                     
@@ -192,15 +192,13 @@ unsigned char CalculaCheckSum(unsigned char * pArrayToTx,
           
           for(ucCount=0;ucCount<ucByteCount;ucCount++)
           {
-              Sum.u16+=(*pArrayToTx);
-              
+              Sum.u16+=(unsigned int)(*pArrayToTx);
+              pArrayToTx++;
           }
-          
-          return (Sum.u8[0]!=0) ?
-                  Sum.u8[1]+Sum.u8[0]:
-                  Sum.u8[1];
-          
-            
+
+          return   (Sum.u8[0]!=0) ?
+                   Sum.u8[1]+Sum.u8[0]:
+                   Sum.u8[1];
 }
 
 //****************************************************************************
@@ -224,20 +222,18 @@ void main(void)
   ConfiguraLCD();
     
   DesligaCursor();
-  //__delay_ms(2000);
   LimpaDisplay();
   PosicaoCursorLCD(1,1);
   EscreveFraseRamLCD("Projeto TCC BSD ");
 
   PosicaoCursorLCD(2,1);
   EscreveFraseRamLCD("PGA450-Q1 EVM-S");
-   __delay_ms(2000);
+   __delay_ms(3000);
     
   LimpaDisplay();
   PosicaoCursorLCD(1,1);
   EscreveFraseRamLCD("MODO: Long Range");
     
-  unsigned char str[20];
   CS_LIN=1;
   LinEngineBusy=FALSE;
   LED_LIFE=FALSE;
@@ -286,16 +282,28 @@ void main(void)
                         * nos registradores no momento, que nos testes feitos foram zero, embora
                         * depois de feita uma atribuicao forçada o soc enviou os valores atribuidos,
                         * oque indica que o mesmo não teve tempo de apurar o tempo de retorno do 
-                        * sinal. Hj 04/11/2020 */
-        __delay_ms(800);//Comentar ou remover esse delay aqui.
+                        * sinal(ToF). Hj 04/11/2020 */
+       __delay_ms(800);//Comentar ou remover esse delay aqui.
        
        LinEngine(ucMsgGetTimeOfFligh);
+       
+       //Armazenamento do PID pra calculo do CheckSum Recebido.
+       ucMsgToRX[0]=ucMsgGetTimeOfFligh[1];
  
 //       IO_LED=~IO_LED;
 //       __delay_ms(300);//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 //       IO_BUZZER=0;
-       TimeOfFlight.u8[0] =(unsigned char) ucMsgToRX[1];
-       TimeOfFlight.u8[1] =(unsigned char) ucMsgToRX[0];
+
+       TimeOfFlight.u8[0] =(unsigned char) ucMsgToRX[2];
+       TimeOfFlight.u8[1] =(unsigned char) ucMsgToRX[1];
+       
+       unsigned char ucCheckSumCalculado = 
+                         ~CalculaCheckSum(ucMsgToRX,3);
+
+       
+       ucCheckSumCalculado!=ucMsgToRX[3] ?
+            b_CheckSumOK=FALSE: 
+            b_CheckSumOK=TRUE; 
 
        if(ImprimeTela)
        {
@@ -315,16 +323,23 @@ void main(void)
             //TimeOfFlight.u16=23456; // 4,02m
             //TimeOfFlight.u16=39457; // 6,76m
             //TimeOfFlight.u16=5798;  // 0,99m
-        
+            
+            // A função de conversão de microsegundos(us) pra metros, foi 
+            //preparada pra converter e exibir a distancia no máximo de 9,99m
+            //ou seja, uma unidade inteira(m) e centésimos de metro(cm).
+            //Logo TimeOfFlight que resulte em valores maiores doque 9,99 metros
+            //não deverá ser convertida e muito menos exibida.
             if(TimeOfFlight.u16 > 58291)// || TimeOfFlight.u16 < 2914)
             { //********************Experiencia, hj 11/09/2020
-            PosicaoCursorLCD(1,1);
+            PosicaoCursorLCD(2,1);
             EscreveFraseRamLCD("ToF: ");
             EscreveInteiroLCD(TimeOfFlight.u16);
             //*************************************Até aqui.
 //            PosicaoCursorLCD(2,1);
 //            EscreveFraseRamLCD(" *OUT OF RANGE* ");   //OBS, Quando sair range, de apagar o lcd, poi se nao ira ficar a letra 'A'.
             //EscreveFraseRamLCD("MODO->Long Range ");
+             PosicaoCursorLCD(2,12);
+             EscreveFraseRamLCD("-,--");
             }
             else
             {
@@ -383,27 +398,34 @@ void main(void)
             //1101--> Somente AN0 e AN1
             //ADCON1bits.PCFG3 = 1;
             //ADCON1bits.PCFG2 = 1;
+            
             ADCON1bits.PCFG1 = 0;
             ADCON1bits.PCFG0 = 1;
-            //
             ADCON0bits.CHS=0x01; //Ativa leitura do AN1
             __delay_us(20);
             ADCON0bits.GO =1;
- 
+             
             PosicaoCursorLCD(2,11);
             while(ADCON0bits.GO_DONE);
             uiValorADC=(ADRESH<<8) + ADRESL; //O valor lido fica entre 138 e 141.
                                              //Na media de 140.
             EscreveADC10bitsOnLCD(uiValorADC);
+            //Caso valor menor doque 100, provavelmente o fusível se encontra
+            //aberto, e exibira a seguinte mensagem:
+            //Linha 1 "Verifiq. Fusível"
+            //Linha 2 " ****ABERTO**** "
         }
         else
-        {
+         {
             TRISAbits.TRISA1 = 0; 
             ADCON1bits.PCFG1 = 1;
             ADCON1bits.PCFG0 = 0;
-            PORTAbits.RA1=~PORTAbits.AN1;
-            // IO_LED=~IO_LED;
-        }
+            if(b_CheckSumOK)
+                LED_STATUS=1;
+            else
+            LED_STATUS=0;
+         }
+    
     }
 }
 

@@ -75,9 +75,8 @@ void LinEngine(unsigned char * pFrameLin)
             break;
             
             case BREAK:
-               
                 if(!LinEngineBusy)
-                    ucLinBitCount=0;
+                  ucLinBitCount=0;
             break;
             
             case SYNCH:
@@ -126,7 +125,6 @@ void LinEngine(unsigned char * pFrameLin)
                 
 
             case DATA_RX:
-                //
                 TX_SOFT=RECESSIVO;
                 INTCONbits.TMR0IF = 0;
                 INTCONbits.TMR0IE = 0;
@@ -136,18 +134,17 @@ void LinEngine(unsigned char * pFrameLin)
                 INTCON3bits.INT2IF=0;
                 INTCON3bits.INT2IE=1;
                 ImprimeTela=TRUE;//qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
-                ucByte_RX=0;
+                ucByte_RX=1;
                 
-                //Espera um determinado tempo pra recepcao dos bytes 
-                //que já se sabe, antecipadamente quantos serão. 04/11/2020
-                //Quanto tempo demora um byte? Na taxa de 19,2 baud
+                //Espera um determinado tempo maximo(TimeOut) pra recepcao dos
+                //bytes que já se sabe, antecipadamente quantos serão 04/11/2020
+                //Quanto tempo demora um byte? Na taxa de 19,2 baud:
                 //Cada bit 53us * 10 = 530us ou 0,53ms.
                 //Implementar um metodo melhor (utilizando um timer talvez),
                 //doque simplesmente um delay, como o abaixo!
-                __delay_ms(20);//Experiencia
-            
-           
-               LIN_ERROR_FLAGS=TRUE;// somente experiencia, força a saída do laço!
+                __delay_ms(20);//Provisório!
+                       
+                LIN_ERROR_FLAGS=TRUE;// somente experiencia, força a saída do laço!
             break;
   
             default:
