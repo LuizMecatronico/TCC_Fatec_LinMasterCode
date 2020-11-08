@@ -17,7 +17,10 @@ bit LinEngineBusy,END_BIT,TRANSMISSAO;
 bit ImprimeTela,startOfByte;
 bit b_diagnostico;
   
-
+union{
+    unsigned short u16;
+    unsigned char u8[2];
+     } TimeOfFlight;
 //*******************************************************************
 
 #define _XTAL_FREQ 48000000

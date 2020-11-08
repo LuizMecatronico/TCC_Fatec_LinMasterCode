@@ -25,7 +25,7 @@
 #define Botao_B2    PORTEbits.RE1
 #define Botao_B3    PORTEbits.RE2
 #define IO_BUZZER   PORTCbits.RC2
-#define IO_LED      PORTAbits.RA2
+//#define IO_LED      PORTAbits.RA2
 
 bit bErroEscrita,b_CheckSumOK;
 bit bModo_Distancia,bLatch;
@@ -90,7 +90,7 @@ void interrupt high_priority Interrupcoes(void)
         ucByteRecebido=0x00;
         ucLinBitCount=0;
     }
-  ucBotaoPressionado++;
+  //ucBotaoPressionado++;
     
     //Esta interrupção ocorre a cada 26us com o TMR0L=180 PRE=4 CicloMaq=12MHz
     //Que é a metade do BitTime de uma LIN com baud de 19.2Kbps
@@ -103,7 +103,7 @@ void interrupt high_priority Interrupcoes(void)
        
         if(TRANSMISSAO)
         {
-          if(b_MeioBitTime)//TransmicaoBit
+          if(b_MeioBitTime)
             {
               if(ucLinBitCount < 8)
                 {
@@ -179,6 +179,9 @@ void interrupt high_priority Interrupcoes(void)
 }
 
 
+//******************************************************************************
+//                          Funcao  CalculaCheckSum
+//******************************************************************************
 unsigned char CalculaCheckSum(unsigned char * pArrayToTx,
                               unsigned char ucByteCount)
 {
@@ -192,7 +195,7 @@ unsigned char CalculaCheckSum(unsigned char * pArrayToTx,
           
           for(ucCount=0;ucCount<ucByteCount;ucCount++)
           {
-              Sum.u16+=(unsigned int)(*pArrayToTx);
+              Sum.u16+=(unsigned int)(*pArrayToTx);//lllllllllllllllllllllllllllllllllllllllllllllllllll
               pArrayToTx++;
           }
 
@@ -200,20 +203,65 @@ unsigned char CalculaCheckSum(unsigned char * pArrayToTx,
                    Sum.u8[1]+Sum.u8[0]:
                    Sum.u8[1];
 }
+//******************************************************************************
+//        Funcao  ConverteExibeTimeofFlightToDistancia(ToF) em Distancia
+//******************************************************************************
+
+void ConverteExibeTimeofFlightToDistancia(void)
+{
+      unsigned long int ulDistanciaMedida;
+      unsigned int uiDistanciaMedida;
+            
+      ulDistanciaMedida =(unsigned long int)
+                      TimeOfFlight.u16*3431;  //343,1 metros/segundos  @20C 
+      ulDistanciaMedida =(unsigned long int)
+                      (ulDistanciaMedida/200);
+      uiDistanciaMedida =(unsigned int)
+                     (ulDistanciaMedida/1000);
+
+      PosicaoCursorLCD(2,1);
+      EscreveFraseRamLCD("ToF: ");
+      EscreveInteiroLCD(TimeOfFlight.u16);
+     
+      PosicaoCursorLCD(2,12);
+      unsigned int  uiNum = uiDistanciaMedida;
+      unsigned char ucDec, ucUnd;
+                   
+      if(uiDistanciaMedida>99)
+        {
+            uiNum=uiDistanciaMedida/100;
+            EscreveCaractereLCD(uiNum+0x30);
+            uiNum=uiDistanciaMedida%100;
+        }
+      else 
+        {
+            EscreveCaractereLCD(0x30);
+        }
+                   
+        EscreveCaractereLCD(',');  
+                   
+        ucDec=uiNum/10;
+        EscreveCaractereLCD(ucDec+0x30);
+        ucUnd=uiNum%10;
+        EscreveCaractereLCD(ucUnd+0x30);
+        EscreveCaractereLCD('m');
+        // ImprimeTela=FALSE;
+}
+
 
 //****************************************************************************
-//               PROGRAMA PRINCIPAL
+//                          PROGRAMA PRINCIPAL
 //****************************************************************************
 
 void main(void)
 {
-  union{
-        unsigned short u16;
-        unsigned char u8[2];
-       } TimeOfFlight;
+//  union{
+//        unsigned short u16;
+//        unsigned char u8[2];
+//       } TimeOfFlight;
    
-  unsigned long int ulDistanciaMedida;
-  unsigned int uiDistanciaMedida;///verificar erro aqui. hj 07/09/2020
+//  unsigned long int ulDistanciaMedida;
+//  unsigned int uiDistanciaMedida;///verificar erro aqui. hj 07/09/2020
   ConfigHw();
    
   TMR0L  = VLR_TM0; //Valor de estouro a cada 26us Aproximadamente.
@@ -228,7 +276,7 @@ void main(void)
 
   PosicaoCursorLCD(2,1);
   EscreveFraseRamLCD("PGA450-Q1 EVM-S");
-   __delay_ms(3000);
+  __delay_ms(3000);
     
   LimpaDisplay();
   PosicaoCursorLCD(1,1);
@@ -236,9 +284,9 @@ void main(void)
     
   CS_LIN=1;
   LinEngineBusy=FALSE;
-  LED_LIFE=FALSE;
+  //LED_LIFE=FALSE;
   bModo_Distancia=TRUE;
-  bLatch=FALSE;
+  //bLatch=FALSE;
   b_diagnostico=FALSE;//*****************************************************
   
   TimeOfFlight.u16=00;
@@ -290,9 +338,9 @@ void main(void)
        //Armazenamento do PID pra calculo do CheckSum Recebido.
        ucMsgToRX[0]=ucMsgGetTimeOfFligh[1];
  
-//       IO_LED=~IO_LED;
-//       __delay_ms(300);//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-//       IO_BUZZER=0;
+       //IO_LED=~IO_LED;
+       //__delay_ms(300);//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+       //IO_BUZZER=0;
 
        TimeOfFlight.u8[0] =(unsigned char) ucMsgToRX[2];
        TimeOfFlight.u8[1] =(unsigned char) ucMsgToRX[1];
@@ -324,56 +372,56 @@ void main(void)
             //TimeOfFlight.u16=39457; // 6,76m
             //TimeOfFlight.u16=5798;  // 0,99m
             
-            // A função de conversão de microsegundos(us) pra metros, foi 
+            //A função de conversão de microsegundos(us) pra metros, foi 
             //preparada pra converter e exibir a distancia no máximo de 9,99m
-            //ou seja, uma unidade inteira(m) e centésimos de metro(cm).
-            //Logo TimeOfFlight que resulte em valores maiores doque 9,99 metros
-            //não deverá ser convertida e muito menos exibida.
+            //ou seja, uma unidade inteira(m) e 99 centésimos de metro(cm).
+            //Logo um TimeOfFlight que resulte em valores maiores doque
+            //9,99 metros não deverá ser convertida e muito menos exibida.
             if(TimeOfFlight.u16 > 58291)// || TimeOfFlight.u16 < 2914)
-            { //********************Experiencia, hj 11/09/2020
-            PosicaoCursorLCD(2,1);
-            EscreveFraseRamLCD("ToF: ");
-            EscreveInteiroLCD(TimeOfFlight.u16);
-            //*************************************Até aqui.
-//            PosicaoCursorLCD(2,1);
-//            EscreveFraseRamLCD(" *OUT OF RANGE* ");   //OBS, Quando sair range, de apagar o lcd, poi se nao ira ficar a letra 'A'.
-            //EscreveFraseRamLCD("MODO->Long Range ");
-             PosicaoCursorLCD(2,12);
-             EscreveFraseRamLCD("-,--");
+            { 
+                PosicaoCursorLCD(2,1);
+                EscreveFraseRamLCD("ToF: ");
+                EscreveInteiroLCD(TimeOfFlight.u16);
+                PosicaoCursorLCD(2,12);
+                EscreveFraseRamLCD("-,--");
             }
             else
             {
-            ulDistanciaMedida =(unsigned long int)  TimeOfFlight.u16*3431;//343.1 @20C //13.533.751//mudar a velocidade do som aqui.Luiz
-            ulDistanciaMedida =(unsigned long int) (ulDistanciaMedida/200);//676,68755
-            uiDistanciaMedida =(unsigned int)      (ulDistanciaMedida/1000);//676,68755
-
-            PosicaoCursorLCD(2,1);
-            EscreveFraseRamLCD("ToF: ");
-            EscreveInteiroLCD(TimeOfFlight.u16);
-       
-            PosicaoCursorLCD(2,12);
-            unsigned int  uiNum = uiDistanciaMedida;
-            unsigned char ucDec, ucUnd;
-                    
-            if(uiDistanciaMedida>99)
-            {
-            uiNum=uiDistanciaMedida/100;
-            EscreveCaractereLCD(uiNum+0x30);
-            uiNum=uiDistanciaMedida%100;
-            }
-            else 
-            {
-            EscreveCaractereLCD(0x30);
-            }
-                   
-            EscreveCaractereLCD(',');  
-                   
-            ucDec=uiNum/10;
-            EscreveCaractereLCD(ucDec+0x30);
-            ucUnd=uiNum%10;
-            EscreveCaractereLCD(ucUnd+0x30);
-            EscreveCaractereLCD('m');
-            ImprimeTela=FALSE;
+                  ConverteExibeTimeofFlightToDistancia();
+//                ulDistanciaMedida =(unsigned long int)
+//                                TimeOfFlight.u16*3431;//343.1 @20C 
+//                ulDistanciaMedida =(unsigned long int)
+//                                (ulDistanciaMedida/200);//676,68755
+//                uiDistanciaMedida =(unsigned int)
+//                                (ulDistanciaMedida/1000);//676,68755
+//
+//                PosicaoCursorLCD(2,1);
+//                EscreveFraseRamLCD("ToF: ");
+//                EscreveInteiroLCD(TimeOfFlight.u16);
+//       
+//                PosicaoCursorLCD(2,12);
+//                unsigned int  uiNum = uiDistanciaMedida;
+//                unsigned char ucDec, ucUnd;
+//                    
+//                if(uiDistanciaMedida>99)
+//                {
+//                    uiNum=uiDistanciaMedida/100;
+//                    EscreveCaractereLCD(uiNum+0x30);
+//                    uiNum=uiDistanciaMedida%100;
+//                }
+//                else 
+//                {
+//                    EscreveCaractereLCD(0x30);
+//                }
+//                   
+//                EscreveCaractereLCD(',');  
+//                   
+//                ucDec=uiNum/10;
+//                EscreveCaractereLCD(ucDec+0x30);
+//                ucUnd=uiNum%10;
+//                EscreveCaractereLCD(ucUnd+0x30);
+//                EscreveCaractereLCD('m');
+//                ImprimeTela=FALSE;
             }
         }   
         //VERIFICA SE O TIMER ZERO ESTA CONTANDO

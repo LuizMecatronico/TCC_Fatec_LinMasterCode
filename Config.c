@@ -98,4 +98,6 @@ void ConfigHw(void) {
     
     //INTCON=0xA0;
     //CONbits.TMR0ON = 0;     //Desabilita o Timer 0;
+    
+
 }

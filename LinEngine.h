@@ -25,7 +25,7 @@
 #define CS_LIN      PORTBbits.RB5
 #define VLR_TM0     180            // 179 -> 54,88us 180-> 53,9us
 #define BIT_TM0     110            // 170 -> 66,00us 
-#define LED_LIFE    PORTBbits.RB7
+//#define LED_LIFE    PORTBbits.RB7
 #define LED_STATUS  PORTAbits.RA1
 
 unsigned int   ui_ContadorMeioBitTime=0;
