@@ -16,6 +16,7 @@ bit b_BitLeitura,b_BitEscrita, b_BitLeitura_;
 bit LinEngineBusy,END_BIT,TRANSMISSAO;
 bit ImprimeTela,startOfByte;
 bit b_diagnostico;
+bit b_FuseBlown,b_FirstBuzzer;
   
 union{
     unsigned short u16;

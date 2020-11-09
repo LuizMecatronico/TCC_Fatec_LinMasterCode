@@ -24,8 +24,8 @@
 #define Botao_B1    PORTEbits.RE0 
 #define Botao_B2    PORTEbits.RE1
 #define Botao_B3    PORTEbits.RE2
-#define IO_BUZZER   PORTCbits.RC2
-//#define IO_LED      PORTAbits.RA2
+
+
 
 bit bErroEscrita,b_CheckSumOK;
 bit bModo_Distancia,bLatch;
@@ -90,8 +90,7 @@ void interrupt high_priority Interrupcoes(void)
         ucByteRecebido=0x00;
         ucLinBitCount=0;
     }
-  //ucBotaoPressionado++;
-    
+      
     //Esta interrupção ocorre a cada 26us com o TMR0L=180 PRE=4 CicloMaq=12MHz
     //Que é a metade do BitTime de uma LIN com baud de 19.2Kbps
     if(INTCONbits.TMR0IF && INTCONbits.TMR0IE)
@@ -115,7 +114,7 @@ void interrupt high_priority Interrupcoes(void)
                     ucLinBitCount++;
                     END_BIT=FALSE;
                 }
-                else   //Todos os Bits dessa sequencia foram transmitidos
+             else   //Todos os Bits dessa sequencia foram transmitidos
                 {
                     if(!END_BIT)
                     {
@@ -195,7 +194,7 @@ unsigned char CalculaCheckSum(unsigned char * pArrayToTx,
           
           for(ucCount=0;ucCount<ucByteCount;ucCount++)
           {
-              Sum.u16+=(unsigned int)(*pArrayToTx);//lllllllllllllllllllllllllllllllllllllllllllllllllll
+              Sum.u16+=(*pArrayToTx);
               pArrayToTx++;
           }
 
@@ -245,8 +244,26 @@ void ConverteExibeTimeofFlightToDistancia(void)
         ucUnd=uiNum%10;
         EscreveCaractereLCD(ucUnd+0x30);
         EscreveCaractereLCD('m');
-        // ImprimeTela=FALSE;
 }
+//****************************************************************************
+//                          Funcao  ImprimeModo()
+//****************************************************************************
+
+void  ImprimeModo()
+{
+     if(bModo_Distancia)
+            {
+                PosicaoCursorLCD(1,1);
+                EscreveFraseRamLCD("MODO->Long Range ");
+            }
+            else
+            {
+                PosicaoCursorLCD(1,1);
+                EscreveFraseRamLCD("MODO->Short Range");
+            }
+}
+
+
 
 
 //****************************************************************************
@@ -255,16 +272,8 @@ void ConverteExibeTimeofFlightToDistancia(void)
 
 void main(void)
 {
-//  union{
-//        unsigned short u16;
-//        unsigned char u8[2];
-//       } TimeOfFlight;
-   
-//  unsigned long int ulDistanciaMedida;
-//  unsigned int uiDistanciaMedida;///verificar erro aqui. hj 07/09/2020
   ConfigHw();
-   
-  TMR0L  = VLR_TM0; //Valor de estouro a cada 26us Aproximadamente.
+  TMR0L  = VLR_TM0;
   CS_LIN = FALSE;    
     
   ConfiguraLCD();
@@ -279,162 +288,97 @@ void main(void)
   __delay_ms(3000);
     
   LimpaDisplay();
-  PosicaoCursorLCD(1,1);
-  EscreveFraseRamLCD("MODO: Long Range");
-    
+  
   CS_LIN=1;
   LinEngineBusy=FALSE;
-  //LED_LIFE=FALSE;
   bModo_Distancia=TRUE;
-  //bLatch=FALSE;
   b_diagnostico=FALSE;//*****************************************************
   
   TimeOfFlight.u16=00;
   
   while(1)
    { 
-//       //SELECIONA O MODO DE DISTANCIA, SE LONGA OU CURTA
-//       if(!(Botao_B1)&& !bLatch)
-//       {
-//           if((ucBotaoPressionado > 100)&&(!bLatch))
-//           {
-//                b_diagnostico=!b_diagnostico;//*****************************
-//                bModo_Distancia=!bModo_Distancia;
-//                ucBotaoPressionado=0x00;
-//                bLatch=TRUE;
-//                LimpaDisplay();
-//           }
-//       }
-//       else if(Botao_B1&& bLatch)
-//       {
-//            ucBotaoPressionado=0x00;
-//            bLatch=FALSE;
-//       }
-//       else  ucBotaoPressionado=0x00;
-//       //********************************************
-        
+      
+      if(!b_FuseBlown)
+        {
+            unsigned char ucCountRX;
+            for(ucCountRX=0 ; ucCountRX<10 ; ucCountRX++)
 
-       unsigned char ucCountRX;
-       for(ucCountRX=0 ; ucCountRX<10 ; ucCountRX++)
-        
-       ucMsgToRX[ucCountRX]=0x00;
-        
-       if(bModo_Distancia)
-           LinEngine(ucMsgSetThresHoldLongRange);
-       else   
-           LinEngine(ucMsgSetThresHoldShortRange);
-        
-       //O delay abaixo, é provisório.
-       __delay_ms(200);/* Caso comente esse delay aqui, de 200ms, a resposta do Slave ocorre,
-                        * mas o "SOC" nao teve tempo de ler a distancia e envia o valor presente
-                        * nos registradores no momento, que nos testes feitos foram zero, embora
-                        * depois de feita uma atribuicao forçada o soc enviou os valores atribuidos,
-                        * oque indica que o mesmo não teve tempo de apurar o tempo de retorno do 
-                        * sinal(ToF). Hj 04/11/2020 */
-       __delay_ms(800);//Comentar ou remover esse delay aqui.
-       
-       LinEngine(ucMsgGetTimeOfFligh);
-       
-       //Armazenamento do PID pra calculo do CheckSum Recebido.
-       ucMsgToRX[0]=ucMsgGetTimeOfFligh[1];
- 
-       //IO_LED=~IO_LED;
-       //__delay_ms(300);//xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
-       //IO_BUZZER=0;
+            ucMsgToRX[ucCountRX]=0x00;
 
-       TimeOfFlight.u8[0] =(unsigned char) ucMsgToRX[2];
-       TimeOfFlight.u8[1] =(unsigned char) ucMsgToRX[1];
-       
-       unsigned char ucCheckSumCalculado = 
-                         ~CalculaCheckSum(ucMsgToRX,3);
-
-       
-       ucCheckSumCalculado!=ucMsgToRX[3] ?
-            b_CheckSumOK=FALSE: 
-            b_CheckSumOK=TRUE; 
-
-       if(ImprimeTela)
-       {
             if(bModo_Distancia)
-            {
-            PosicaoCursorLCD(1,1);
-            EscreveFraseRamLCD("MODO->Long Range ");
-            }
-            else
-            {
-            PosicaoCursorLCD(1,1);
-            EscreveFraseRamLCD("MODO->Short Range");
-            }
-            //TimeOfFlight.u16++;
-            //TimeOfFlight.u16=65535; //11,29m 
-            //TimeOfFlight.u16=14938; // 2,56m     
-            //TimeOfFlight.u16=23456; // 4,02m
-            //TimeOfFlight.u16=39457; // 6,76m
-            //TimeOfFlight.u16=5798;  // 0,99m
+                LinEngine(ucMsgSetThresHoldLongRange);
+            else   
+                LinEngine(ucMsgSetThresHoldShortRange);
+
+            //O delay abaixo, é provisório.
+            __delay_ms(200);/* Caso comente esse delay aqui, de 200ms, a resposta do Slave ocorre,
+                             * mas o "SOC" nao teve tempo de ler a distancia e envia o valor presente
+                             * nos registradores no momento, que nos testes feitos foram zero, embora
+                             * depois de feita uma atribuicao forçada o soc enviou os valores atribuidos,
+                             * oque indica que o mesmo não teve tempo de apurar o tempo de retorno do 
+                             * sinal(ToF). Hj 04/11/2020 */
+            __delay_ms(800);//Comentar ou remover esse delay aqui.
+
+            LinEngine(ucMsgGetTimeOfFligh);
+
+            //Armazenamento do PID pra calculo do CheckSum Recebido.
+            ucMsgToRX[0]=ucMsgGetTimeOfFligh[1];
+
+            TimeOfFlight.u8[0] =(unsigned char) ucMsgToRX[2];
+            TimeOfFlight.u8[1] =(unsigned char) ucMsgToRX[1];
+
+            unsigned char ucCheckSumCalculado = 
+                              ~CalculaCheckSum(ucMsgToRX,3);
             
+            ucCheckSumCalculado!=ucMsgToRX[3] ?
+                            b_CheckSumOK=FALSE: 
+                             b_CheckSumOK=TRUE; 
+    
+        }//b_FuseBlown       
+
+      if(b_CheckSumOK)
+        {   
+            LED_STATUS=1;
+        
+            ImprimeModo();
+                                
             //A função de conversão de microsegundos(us) pra metros, foi 
             //preparada pra converter e exibir a distancia no máximo de 9,99m
             //ou seja, uma unidade inteira(m) e 99 centésimos de metro(cm).
             //Logo um TimeOfFlight que resulte em valores maiores doque
             //9,99 metros não deverá ser convertida e muito menos exibida.
-            if(TimeOfFlight.u16 > 58291)// || TimeOfFlight.u16 < 2914)
+            if(TimeOfFlight.u16 > 58291)
             { 
                 PosicaoCursorLCD(2,1);
                 EscreveFraseRamLCD("ToF: ");
                 EscreveInteiroLCD(TimeOfFlight.u16);
                 PosicaoCursorLCD(2,12);
                 EscreveFraseRamLCD("-,--");
+                b_FirstBuzzer=TRUE;
             }
             else
             {
-                  ConverteExibeTimeofFlightToDistancia();
-//                ulDistanciaMedida =(unsigned long int)
-//                                TimeOfFlight.u16*3431;//343.1 @20C 
-//                ulDistanciaMedida =(unsigned long int)
-//                                (ulDistanciaMedida/200);//676,68755
-//                uiDistanciaMedida =(unsigned int)
-//                                (ulDistanciaMedida/1000);//676,68755
-//
-//                PosicaoCursorLCD(2,1);
-//                EscreveFraseRamLCD("ToF: ");
-//                EscreveInteiroLCD(TimeOfFlight.u16);
-//       
-//                PosicaoCursorLCD(2,12);
-//                unsigned int  uiNum = uiDistanciaMedida;
-//                unsigned char ucDec, ucUnd;
-//                    
-//                if(uiDistanciaMedida>99)
-//                {
-//                    uiNum=uiDistanciaMedida/100;
-//                    EscreveCaractereLCD(uiNum+0x30);
-//                    uiNum=uiDistanciaMedida%100;
-//                }
-//                else 
-//                {
-//                    EscreveCaractereLCD(0x30);
-//                }
-//                   
-//                EscreveCaractereLCD(',');  
-//                   
-//                ucDec=uiNum/10;
-//                EscreveCaractereLCD(ucDec+0x30);
-//                ucUnd=uiNum%10;
-//                EscreveCaractereLCD(ucUnd+0x30);
-//                EscreveCaractereLCD('m');
-//                ImprimeTela=FALSE;
+                ConverteExibeTimeofFlightToDistancia();
+                
+                LED_ALERTA=TRUE;
+                //Caso a seta esteja acionada, ou na primeira vez que se
+                //identificar um objeto dentro do range, emite um buzzer
+                //curto uma unica vez.
+                if(b_FirstBuzzer)
+                {
+                    IO_BUZZER=TRUE;
+                    b_FirstBuzzer=FALSE;
+                }
+                __delay_ms(20);
+                IO_BUZZER=FALSE;
+                LED_ALERTA=FALSE;
             }
+
         }   
-        //VERIFICA SE O TIMER ZERO ESTA CONTANDO
-        //if(ui_ContadorMeioBitTime!=
-        //      Anterior_ui_ContadorMeioBitTime++)
-        
-      
-        //__delay_ms(1000);//88888888888888888888888888888888888888888888888888888888
-        IO_BUZZER=0;
-        __delay_ms(100);
-        IO_BUZZER=0;
-        if(b_diagnostico)
+        else
         {
+          
             //Ler entrada analogica AN1.
             TRISAbits.TRISA1 = 1; 
             //-------------------------------------------------------------------------
@@ -453,31 +397,35 @@ void main(void)
             __delay_us(20);
             ADCON0bits.GO =1;
              
-            PosicaoCursorLCD(2,11);
+            //PosicaoCursorLCD(2,11);
             while(ADCON0bits.GO_DONE);
             uiValorADC=(ADRESH<<8) + ADRESL; //O valor lido fica entre 138 e 141.
                                              //Na media de 140.
-            EscreveADC10bitsOnLCD(uiValorADC);
+            //EscreveADC10bitsOnLCD(uiValorADC);
             //Caso valor menor doque 100, provavelmente o fusível se encontra
             //aberto, e exibira a seguinte mensagem:
             //Linha 1 "Verifiq. Fusível"
             //Linha 2 " ****ABERTO**** "
-        }
+            if(uiValorADC<100)
+            {
+                PosicaoCursorLCD(1,1);
+                EscreveFraseRamLCD("Verifiq. Fusivel");
+                PosicaoCursorLCD(2,1);
+                EscreveFraseRamLCD(" ****ABERTO**** ");
+                b_FuseBlown=TRUE;
+            }
+        
         else
-         {
-            TRISAbits.TRISA1 = 0; 
-            ADCON1bits.PCFG1 = 1;
-            ADCON1bits.PCFG0 = 0;
-            if(b_CheckSumOK)
-                LED_STATUS=1;
-            else
-            LED_STATUS=0;
-         }
-    
+           {
+                TRISAbits.TRISA1 = 0; 
+                ADCON1bits.PCFG1 = 1;
+                ADCON1bits.PCFG0 = 0;
+                ImprimeModo();
+                PosicaoCursorLCD(2,1);
+                EscreveFraseRamLCD("ToF:             ");
+                b_FuseBlown=FALSE;
+           }
+         LED_STATUS=0;
+        }
     }
 }
-
-                
-            
-        
-    

@@ -16,7 +16,6 @@
 #define TX_DATA6      0x0A
 #define TX_DATA7      0x0B
 #define TX_CHECKSUM   0x0C
-
 #define DATA_RX       0x0D
 
 //Define os pinos para o LIN_SOFT
@@ -25,8 +24,9 @@
 #define CS_LIN      PORTBbits.RB5
 #define VLR_TM0     180            // 179 -> 54,88us 180-> 53,9us
 #define BIT_TM0     110            // 170 -> 66,00us 
-//#define LED_LIFE    PORTBbits.RB7
 #define LED_STATUS  PORTAbits.RA1
+#define LED_ALERTA  PORTAbits.RA2 
+#define IO_BUZZER   PORTCbits.RC2
 
 unsigned int   ui_ContadorMeioBitTime=0;
 unsigned char  ucByte_RX , ucLinAction=0x00;

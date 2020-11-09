@@ -49,8 +49,8 @@ void LinEngine(unsigned char * pFrameLin)
        ucByteSizeToTX = (pFrameLin[0] & 0x0F);
 
     
-    LIN_ERROR_FLAGS=FALSE;// Rever essas flag, pois nao esta apropriadamente
-                          // estabelecida a correlação dos seus bits.   
+    LIN_ERROR_FLAGS=FALSE;// Rever essas flags, pois nao estao apropriadamente
+                          // estabelecidas a correlações dos seus bits.   
     ucLinAction=0;
       while(!LIN_ERROR_FLAGS)
       {
@@ -133,7 +133,6 @@ void LinEngine(unsigned char * pFrameLin)
                 ucByteRecebido=0x00;
                 INTCON3bits.INT2IF=0;
                 INTCON3bits.INT2IE=1;
-                ImprimeTela=TRUE;//qqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqqq
                 ucByte_RX=1;
                 
                 //Espera um determinado tempo maximo(TimeOut) pra recepcao dos
